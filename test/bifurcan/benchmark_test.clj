@@ -7,6 +7,7 @@
    [clojure.test.check.generators :as gen]
    [bifurcan.test-utils :as u]
    [bifurcan.rope-tests]
+   [clojure.core.rrb-vector :as crrbv]
    [criterium.core :as c]
    [clojure.set :as set]
    [clojure.pprint :refer (pprint)]
@@ -270,6 +271,12 @@
     (persistent! s)))
 
 (defn construct-clojure-vector [v vs]
+  (let-mutable [l (transient v)]
+    (doary [v vs]
+      (set! l (conj! l v)))
+    (persistent! l)))
+
+(defn construct-clojure-rrb-vector [v vs]
   (let-mutable [l (transient v)]
     (doary [v vs]
       (set! l (conj! l v)))
@@ -912,6 +919,16 @@
    :lookup    #(doary [i %2] (nth %1 i))
    :concat    #(into %1 %2)})
 
+(def clojure-rrb-vector
+  {:label     "clojure.core.rrb-vector"
+   :base      (constantly (crrbv/vector))
+   :entries   generate-numbers
+   :construct construct-clojure-rrb-vector
+   :iterator  iterator
+   :consume   consume-iterator
+   :lookup    #(doary [i %2] (nth %1 i))
+   :concat    #(crrbv/catvec %1 %2)})
+
 ;; strings
 
 (def java-string
@@ -1056,7 +1073,7 @@
 
 (def sorted-maps [bifurcan-sorted-map java-sorted-map clojure-sorted-map vavr-sorted-map scala-sorted-map paguro-sorted-map int-map scala-int-map])
 
-(def lists [bifurcan-list java-array-list clojure-vector vavr-vector scala-vector paguro-vector linear-list #_pcollections-vector])
+(def lists [bifurcan-list java-array-list clojure-vector vavr-vector scala-vector paguro-vector linear-list clojure-rrb-vector #_pcollections-vector])
 
 (def strings [java-string rope])
 
