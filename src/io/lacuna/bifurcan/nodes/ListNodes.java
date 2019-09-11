@@ -39,7 +39,7 @@ public class ListNodes {
 
   public static class Node {
 
-    public final static Node EMPTY = new Node(new Object(), 5);
+    public final static Node EMPTY = new Node(new Object(), SHIFT_INCREMENT);
 
     public final byte shift;
     public boolean isStrict;
@@ -141,6 +141,9 @@ public class ListNodes {
     }
 
     private int indexOf(int idx) {
+      // TBD: What is the relevance of the value 60 here?  That larger
+      // shift values on a 64-bit long will give results that do not
+      // make sense in this context?
       int estimate = shift > 60 ? 0 : (idx >>> shift) & BRANCH_MASK;
       if (isStrict) {
         return estimate;
@@ -255,6 +258,10 @@ public class ListNodes {
     ///
 
     public Node pushLast(Object[] chunk, Object editor) {
+//      System.out.println("  pushLast(Object[], Object):" +
+//			 " size()=" + size() +
+//			 " shift=" + shift +
+//			 " numNodes=" + numNodes);
 
       if (size() == 0 && shift > SHIFT_INCREMENT) {
         return pushLast(from(editor, chunk), editor);
@@ -269,6 +276,14 @@ public class ListNodes {
 
       // we need to grow a parent
       if (stack[stack.length - 1].numNodes == MAX_BRANCHES) {
+	// TBD: If the last node has MAX_BRANCHES nodes, certainly a
+	// new node is needed somewhere, but what if there are
+	// stack[0] with MAX_BRANCHES, stack[1] with numNodes == 1,
+	// and stack[2] with MAX_BRANCHES.  Shouldn't we expand node
+	// stack[1] to have a 2nd child?
+
+	// Is that what this code actually does, somehow, or does it
+	// create a new level to the tree in that case?
         return numNodes == MAX_BRANCHES
           ? new Node(editor, shift + SHIFT_INCREMENT).pushLast(this, editor).pushLast(chunk, editor)
           : pushLast(new Node(editor, SHIFT_INCREMENT).pushLast(chunk, editor), editor);
@@ -346,6 +361,10 @@ public class ListNodes {
     }
 
     public Node pushLast(Node node, Object editor) {
+//      System.out.println("  pushLast(Node node, Object):" +
+//			 " node.size()=" + node.size() +
+//			 " node.shift=" + node.shift +
+//			 " node.numNodes=" + node.numNodes);
 
       if (node.size() == 0) {
         return this;

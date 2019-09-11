@@ -18,6 +18,9 @@ import static java.lang.System.arraycopy;
  */
 public class List<V> implements IList<V>, Cloneable {
 
+  // This value must match the value of MAX_BRANCHES in class ListNodes
+  private static final int MAX_BRANCHES = 32;
+
   private Node root;
   private byte prefixLen, suffixLen;
   public Object[] prefix, suffix;
@@ -333,7 +336,7 @@ public class List<V> implements IList<V>, Cloneable {
     if (prefix == null) {
       prefix = new Object[2];
     } else if (prefixLen == prefix.length) {
-      Object[] newPrefix = new Object[min(32, prefix.length << 1)];
+      Object[] newPrefix = new Object[min(MAX_BRANCHES, prefix.length << 1)];
       arraycopy(prefix, 0, newPrefix, newPrefix.length - prefixLen, prefixLen);
       prefix = newPrefix;
     }
@@ -341,7 +344,7 @@ public class List<V> implements IList<V>, Cloneable {
     prefix[pIdx(-1)] = value;
     prefixLen++;
 
-    if (prefixLen == 32) {
+    if (prefixLen == MAX_BRANCHES) {
       Object editor = isLinear() ? this.editor : new Object();
       root = root.pushFirst(prefix, editor);
       prefix = null;
@@ -356,18 +359,23 @@ public class List<V> implements IList<V>, Cloneable {
     if (suffix == null) {
       suffix = new Object[2];
     } else if (suffixLen == suffix.length) {
-      Object[] newSuffix = new Object[min(32, suffix.length << 1)];
+      Object[] newSuffix = new Object[min(MAX_BRANCHES, suffix.length << 1)];
       arraycopy(suffix, 0, newSuffix, 0, suffix.length);
       suffix = newSuffix;
     }
 
     suffix[suffixLen++] = value;
 
-    if (suffixLen == 32) {
+    if (suffixLen == MAX_BRANCHES) {
       Object editor = isLinear() ? this.editor : new Object();
       root = root.pushLast(suffix, editor);
       suffix = null;
       suffixLen = 0;
+//      System.out.println("after List.pushLast root.size()=" + root.size() +
+//			 " prefixLen=" + prefixLen +
+//			 " suffixLen=" + suffixLen +
+//			 " root.shift=" + root.shift +
+//			 " size()=" + size());
     }
 
     return this;
