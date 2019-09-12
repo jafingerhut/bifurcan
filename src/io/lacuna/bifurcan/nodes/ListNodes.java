@@ -537,7 +537,7 @@ public class ListNodes {
 
           // lop off the rightmost node
           n.numNodes--;
-          if (n.numNodes == 1 && n.shift > SHIFT_INCREMENT) {
+          if (i == 0 && n.numNodes == 1 && n.shift > SHIFT_INCREMENT) {
             return (Node) n.nodes[0];
           }
 
