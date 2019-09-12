@@ -41,7 +41,10 @@
     (let [l4 (.slice l3 1 10)]
       (is (= true (same-seq l4 r4))))))
 
-(deftest unfiled-issue-1
+(deftest github-issue-18-variant
+  ;; The root cause here appears to be similar to issue 18, with a
+  ;; similar fix, except in popFirst instead of popLast.  They have
+  ;; very similar cases to handle.
   (let [b max-branches
         n1 (+ (* 2 b b) b)
         r1 (range n1)

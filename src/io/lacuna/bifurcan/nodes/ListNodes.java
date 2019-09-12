@@ -505,7 +505,7 @@ public class ListNodes {
 
           // shift everything left
           n.numNodes--;
-          if (n.numNodes == 1 && n.shift > SHIFT_INCREMENT) {
+          if (i == 0 && n.numNodes == 1 && n.shift > SHIFT_INCREMENT) {
             return (Node) n.nodes[1];
           }
 
