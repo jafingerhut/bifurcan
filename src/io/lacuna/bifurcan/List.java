@@ -18,8 +18,10 @@ import static java.lang.System.arraycopy;
  */
 public class List<V> implements IList<V>, Cloneable {
 
-  // This value must match the value of MAX_BRANCHES in class ListNodes
-  private static final int MAX_BRANCHES = 32;
+  // These values must match the value of MAX_BRANCHES in class
+  // ListNodes
+  private static final int SHIFT_INCREMENT = 2;
+  private static final int MAX_BRANCHES = 1 << SHIFT_INCREMENT;
 
   private Node root;
   private byte prefixLen, suffixLen;
@@ -208,6 +210,21 @@ public class List<V> implements IList<V>, Cloneable {
     int s = (int) start;
     int e = (int) end;
 
+    // Consider adding a special case like this.  This seems perfectly
+    // fine if the input List is forked, but if the input list is
+    // linear, should the returned one always be the identical object
+    // as the input parameter, and still linear?
+    /*
+    if (e - s <= (2 * MAX_BRANCHES)) {
+      // The entire result fits in a single tree node plus suffix.
+      // Simply create a new List with the specified elements.
+      List<V> list = new List<V>().linear();
+      for (int i = s; i < e; i++) {
+        list.addLast(nth(i));
+      }
+      return list.forked();
+    }
+    */
     int pStart = min(prefixLen, s);
     int pEnd = min(prefixLen, e);
     int pLen = pEnd - pStart;
@@ -371,11 +388,6 @@ public class List<V> implements IList<V>, Cloneable {
       root = root.pushLast(suffix, editor);
       suffix = null;
       suffixLen = 0;
-//      System.out.println("after List.pushLast root.size()=" + root.size() +
-//			 " prefixLen=" + prefixLen +
-//			 " suffixLen=" + suffixLen +
-//			 " root.shift=" + root.shift +
-//			 " size()=" + size());
     }
 
     return this;
@@ -418,6 +430,10 @@ public class List<V> implements IList<V>, Cloneable {
           root = root.popLast(editor);
         }
       } else if (prefixLen > 0) {
+        // TBD: This definitely looks suspect in terms of safe
+        // cross-thread visibility of changes, and mutating data out
+        // from under a different thread that could simultaneously be
+        // reading what it think is an immutable data structure.
         prefixLen--;
         arraycopy(prefix, pIdx(-1), prefix, pIdx(0), prefixLen);
         prefix[pIdx(-1)] = null;
@@ -431,3 +447,9 @@ public class List<V> implements IList<V>, Cloneable {
     return this;
   }
 }
+
+/* Local Variables:      */
+/* mode: java            */
+/* c-basic-offset: 2     */
+/* indent-tabs-mode: nil */
+/* End:                  */
