@@ -9,12 +9,21 @@
 ;; tests can be parameterized based upon those values.
 
 (def listnode-class io.lacuna.bifurcan.nodes.ListNodes)
-(def listnode-max-branches-field (.getDeclaredField listnode-class "MAX_BRANCHES"))
+(def listnode-max-branches-field
+  (.getDeclaredField listnode-class "MAX_BRANCHES"))
 (.setAccessible listnode-max-branches-field true)
 (def max-branches (.get listnode-max-branches-field listnode-class))
 
+
 (defn same-seq [a b]
   (= (seq a) (seq b)))
+
+(deftest github-issue-18
+  (let [b max-branches
+        n (+ (* b b b) (* b b) b)
+        l1 (.concat (List.) (List/from (range n)))]
+    (is (= true (same-seq (range n) l1)))
+    (is (= true (same-seq (range (dec n)) (.removeLast l1))))))
 
 (deftest github-issue-19
   (let [b max-branches
