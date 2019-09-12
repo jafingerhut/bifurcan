@@ -387,8 +387,8 @@ public class ListNodes {
 	// create a path of new nodes from node 'this' to the new one
 	// 'node'.
         for (int i = stack.length - 1; i >= 0; i--) {
-	  Node n;
-          n = from(editor, shift - i * SHIFT_INCREMENT, (i == stack.length - 1) ? node : stack[i+1]);
+	  Node n = from(editor, shift - i * SHIFT_INCREMENT,
+                        (i == stack.length - 1) ? node : stack[i+1]);
 	  stack[i] = n;
         }
 	return stack[0];
