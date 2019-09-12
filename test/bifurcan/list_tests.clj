@@ -40,3 +40,30 @@
     (is (= true (same-seq l3 r3)))
     (let [l4 (.slice l3 1 10)]
       (is (= true (same-seq l4 r4))))))
+
+(deftest unfiled-issue-1
+  (let [b max-branches
+        n1 (+ (* 2 b b) b)
+        r1 (range n1)
+        l1 (.concat (List.) (List/from r1))
+
+        l2s (+ (* 2 b b) (- b))
+        l2e (+ (* 2 b b) 1)
+        l2 (.slice l1 l2s l2e)
+        r2 (subvec (vec r1) l2s l2e)
+
+        n3 (+ (* b b b) b)
+        r3 (range n3)
+        l3 (.concat (List.) (List/from r3))
+
+        l4 (.concat l2 l3)
+        r4 (concat r2 r3)
+
+        l5 (.removeFirst l4)
+        r5 (next r4)]
+
+    (is (= true (same-seq l1 r1)))
+    (is (= true (same-seq l2 r2)))
+    (is (= true (same-seq l3 r3)))
+    (is (= true (same-seq l4 r4)))
+    (is (= true (same-seq l5 r5)))))
