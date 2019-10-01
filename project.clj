@@ -23,7 +23,7 @@
                                      [byte-streams "0.2.4"]
                                      [eftest "0.5.8"]
                                      [virgil "0.1.9"]
-                                     [org.clojure/core.rrb-vector "0.0.15-SNAPSHOT"]
+                                     [org.clojure/core.rrb-vector "0.1.0"]
 
                                      ;; for comparative benchmarks
                                      [io.usethesource/capsule "0.6.3"]
