@@ -10,13 +10,19 @@ INSTALL_DIR=$(dirname "$BASH_SOURCE")
 
 echo "Running benchmarks only for the classes that are like Clojure vectors."
 echo "When finished, result data will be stored in benchmarks/data directory."
+echo "With the parameters used in this script, running the benchmarks will"
+echo "take about 60 minutes."
 echo ""
-echo lein benchmark 1000000 4 bifurcan.List java.ArrayList clojure.PersistentVector vavr.Vector scala.Vector paguro.RrbTree bifurcan.LinearList clojure.core.rrb-vector
+set -x
+time lein benchmark 1000000 4 bifurcan.List java.ArrayList clojure.PersistentVector vavr.Vector scala.Vector paguro.RrbTree bifurcan.LinearList clojure.core.rrb-vector
+set +x
 cd "${INSTALL_DIR}"
 cd gnuplot
 for x in concat*.gnu list*.gnu
 do
+    set -x
     gnuplot $x
+    set +x
 done
 echo ""
 echo "Ran gnuplot to generate only the graphs related to vectors."
