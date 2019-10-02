@@ -10,6 +10,7 @@
    [clojure.core.rrb-vector :as crrbv]
    [criterium.core :as c]
    [clojure.set :as set]
+   [clojure.string :as str]
    [clojure.pprint :refer (pprint)]
    [clojure.java.shell :as sh]
    [clojure.java.io :as io])
@@ -1226,6 +1227,31 @@
       (catch Throwable e
         (throw e)))))
 
+(defn print-all-collection-names [colls with-index? prefix-str]
+  (dorun (map-indexed (fn [idx coll]
+                        (println (format "%s%s%s"
+                                         prefix-str
+                                         (if with-index?
+                                           (format "%3d " idx)
+                                           "")
+                                         (:label coll))))
+                      all-colls)))
+
+(defn map-coll-name->index [colls]
+  (->> colls
+       (map-indexed (fn [idx coll] [(:label coll) idx]))
+       (into {})))
+
+(defn get-collection-indexes
+  [coll-names colls]
+  (let [coll-name->index (map-coll-name->index colls)
+        not-found-names (remove #(contains? coll-name->index %) coll-names)]
+    (if (empty? not-found-names)
+      {:all-found true,
+       :indexes (mapv coll-name->index coll-names)}
+      {:all-found false,
+       :not-found-names not-found-names})))
+
 (defn -main [task & args]
   (case task
     "help"
@@ -1233,9 +1259,11 @@
       (println "lein benchmark")
       (println "lein benchmark <n>")
       (println "lein benchmark <n> <step>")
+      (println "lein benchmark <n> <step> <coll-name1> <coll-name2> ...")
       (println
-"    Runs benchmarks on all collections, and records performance data in
-    files in the directory benchmarks/data.  See below for a
+"    Runs benchmarks on all collections, if no collection names are
+    specified, or only one the named collections.  Record performance
+    data in files in the directory benchmarks/data.  See below for a
     description of <n> and <step>.")
       (println)
       (println "lein run -m bifurcan.benchmark-test benchmark-collection <n> <step> <collection-idx>")
@@ -1250,9 +1278,7 @@
     spaced on a logarithmic scale.")
       (println)
       (println "Table of <collection-idx> values:")
-      (dorun (map-indexed (fn [idx coll]
-                            (println (format "%3d %s" idx (:label coll))))
-                          all-colls)))
+      (print-all-collection-names all-colls true ""))
 
     "benchmark-collection"
     (let [[n step idx] args]
@@ -1266,8 +1292,20 @@
           (.printStackTrace e System/out))))
 
     "benchmark"
-    (let [[n step]   args
-          descriptor (->> (range (count all-colls))
+    (let [[n step & collection-names] args
+          coll-idxs (if (empty? collection-names)
+                      {:all-found true,
+                       :indexes (range (count all-colls))}
+                      (get-collection-indexes collection-names all-colls))
+          _ (when-not (:all-found coll-idxs)
+              (println "These collection names given on the command line are unknown:")
+              (println "  " (str/join " " (:not-found-names coll-idxs)))
+              (println "\nThe list below contains all known collection names:\n")
+              (print-all-collection-names all-colls false "  ")
+              (flush)
+              (Thread/sleep 100)
+              (System/exit 1))
+          descriptor (->> (:indexes coll-idxs)
                        (map (fn [idx]
                               (when ((constantly true)
                                       (nth all-colls idx))
