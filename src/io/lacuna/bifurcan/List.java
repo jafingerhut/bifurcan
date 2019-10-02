@@ -20,7 +20,7 @@ public class List<V> implements IList<V>, Cloneable {
 
   // These values must match the value of MAX_BRANCHES in class
   // ListNodes
-  private static final int SHIFT_INCREMENT = 2;
+  private static final int SHIFT_INCREMENT = 5;
   private static final int MAX_BRANCHES = 1 << SHIFT_INCREMENT;
 
   private Node root;
