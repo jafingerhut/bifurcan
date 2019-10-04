@@ -180,6 +180,13 @@
       (recur (or (.next it) x))
       x)))
 
+(defn consume-seq [s]
+  (loop [s s
+         x nil]
+    (if s
+      (recur (next s) (first s))
+      x)))
+
 (defn consume-int-iterator [^PrimitiveIterator$OfInt it]
   (loop [x nil]
     (if (.hasNext it)
@@ -547,6 +554,8 @@
      :lookup lookup-map
      :consume consume-entry-iterator
      :iterator iterator
+     :seq seq
+     :consume-seq consume-seq
      :union map-union
      :difference map-difference
      :intersection map-intersection
@@ -562,6 +571,8 @@
      :lookup lookup-set
      :consume consume-iterator
      :iterator iterator
+     :seq seq
+     :consume-seq consume-seq
      :union set-union
      :difference set-difference
      :intersection set-intersection
@@ -577,6 +588,8 @@
      :lookup lookup-list
      :consume consume-iterator
      :iterator iterator
+     :seq seq
+     :consume-seq consume-seq
      :concat #(.concat ^IList %1 %2)
      :split split}))
 
@@ -594,6 +607,7 @@
    :lookup       #(doary [k %2] (.get ^scala.collection.immutable.Map %1 k))
    :iterator     #(.iterator ^scala.collection.immutable.Map %)
    :consume      consume-scala-iterator
+   ;; this data structure throws exception for both seq and iterator-seq
    :union        #(.$plus$plus ^scala.collection.immutable.Map %1 ^scala.collection.immutable.Map %2)
    :difference   #(.$minus$minus ^scala.collection.immutable.Map %1 (.keySet ^scala.collection.immutable.Map %2))
    :intersection (fn [a b] (.filter ^scala.collection.immutable.Map a ^scala.Function1 (scala-fn1 #(.contains ^scala.collection.immutable.Map b (._1 ^scala.Tuple2 %)))))
@@ -608,6 +622,8 @@
    :lookup       lookup-java-map
    :iterator     #(-> ^java.util.Map % .entrySet .iterator)
    :consume      consume-java-entry-iterator
+   :seq          seq
+   :consume-seq  consume-seq
    :union        #(.plusAll ^PMap %1 %2)
    :difference   #(.minusAll ^PMap %1 (.keySet ^PMap %2))
    :intersection intersect-pcollections-maps
@@ -622,6 +638,8 @@
    :lookup       #(doary [k %2] (.entry ^PersistentHashMap %1 k))
    :iterator     iterator
    :consume      consume-iterator
+   :seq          seq
+   :consume-seq  consume-seq
    :union        union-paguro-map
    :difference   difference-paguro-map
    :intersection intersect-paguro-map
@@ -636,6 +654,8 @@
    :lookup       lookup-java-map
    :iterator     #(-> ^java.util.Map % .entrySet .iterator)
    :consume      consume-java-entry-iterator
+   :seq          seq
+   :consume-seq  consume-seq
    :union        union-capsule-maps
    :difference   diff-capsule-maps
    :intersection intersect-capsule-maps
@@ -650,6 +670,8 @@
    :lookup       #(doary [k %2] (.get ^io.vavr.collection.Map %1 k))
    :iterator     iterator
    :consume      consume-iterator
+   :seq          seq
+   :consume-seq  consume-seq
    :union        #(.merge ^io.vavr.collection.Map %1 %2)
    :difference   (fn [a b] (.removeKeys ^io.vavr.collection.Map a (predicate #(.containsKey ^io.vavr.collection.Map b %))))
    :intersection (fn [a b] (.removeKeys ^io.vavr.collection.Map a (predicate #(not (.containsKey ^io.vavr.collection.Map b %)))))
@@ -663,6 +685,8 @@
      :lookup       lookup-java-map
      :iterator     #(-> ^java.util.Map % .entrySet .iterator)
      :consume      consume-java-entry-iterator
+     :seq          seq
+     :consume-seq  consume-seq
      :union        union-java-maps
      :difference   diff-java-maps
      :intersection intersect-java-maps
@@ -677,6 +701,8 @@
    :lookup       #(doary [k %2] (get %1 k))
    :iterator     iterator
    :consume      consume-java-entry-iterator
+   :seq          seq
+   :consume-seq  consume-seq
    :union        merge
    :difference   #(persistent! (apply dissoc! (transient %1) (keys %2)))
    :intersection #(select-keys %1 (keys %2))
@@ -698,12 +724,14 @@
      :entries   generate-numbers}))
 
 (def scala-int-map
+  ;; this data structure throws exception for both seq and iterator-seq
   (merge scala-map
     {:label   "scala.LongMap"
      :base    #(.newBuilder (scala.collection.immutable.LongMap$/MODULE$))
      :entries generate-numbers}))
 
 (def scala-sorted-map
+  ;; this data structure throws exception for both seq and iterator-seq
   (merge scala-int-map
     {:label "scala.TreeMap"
      :base  #(.newBuilder
@@ -758,6 +786,8 @@
      :entries      generate-entries
      :iterator     iterator
      :consume      consume-iterator
+     :seq          seq
+     :consume-seq  consume-seq
      :union        #(doto ^HashSet (.clone ^HashSet %1) (.addAll %2))
      :difference   #(doto ^HashSet (.clone ^HashSet %1) (.removeAll %2))
      :intersection intersect-hash-sets
@@ -772,6 +802,8 @@
    :lookup       lookup-java-set
    :iterator     #(.iterator ^Iterable %)
    :consume      consume-iterator
+   :seq          seq
+   :consume-seq  consume-seq
    :union        #(.plusAll ^PSet %1 ^java.util.Collection %2)
    :difference   #(.minusAll ^PSet %1 ^java.util.Collection %2)
    :intersection intersect-pcollections-sets
@@ -786,6 +818,8 @@
    :lookup       #(doary [k %2] (.contains ^io.vavr.collection.Set %1 k))
    :iterator     #(.iterator ^Iterable %)
    :consume      consume-iterator
+   :seq          seq
+   :consume-seq  consume-seq
    :union        #(.union ^io.vavr.collection.Set %1 %2)
    :difference   #(.diff ^io.vavr.collection.Set %1 %2)
    :intersection #(.intersect ^io.vavr.collection.Set %1 %2)
@@ -800,6 +834,7 @@
    :lookup       #(doary [k %2] (.contains ^scala.collection.immutable.Set %1 k))
    :iterator     #(.iterator ^scala.collection.immutable.Set %)
    :consume      consume-scala-iterator
+   ;; this data structure throws exception for both seq and iterator-seq
    :union        #(.union ^scala.collection.immutable.Set %1 ^scala.collection.immutable.Set %2)
    :difference   #(.diff ^scala.collection.immutable.Set %1 ^scala.collection.immutable.Set %2)
    :intersection #(.$amp ^scala.collection.immutable.Set %1 %2)
@@ -814,6 +849,8 @@
    :lookup       #(doary [k %2] (.contains ^PersistentHashSet %1 k))
    :iterator     iterator
    :consume      consume-iterator
+   :seq          seq
+   :consume-seq  consume-seq
    :union        union-paguro-set
    :difference   difference-paguro-set
    :intersection intersect-paguro-set
@@ -828,6 +865,8 @@
    :lookup       lookup-java-set
    :iterator     iterator
    :consume      consume-iterator
+   :seq          seq
+   :consume-seq  consume-seq
    :union        #(.__insertAll ^Set$Immutable %1 %2)
    :difference   #(.__removeAll ^Set$Immutable %1 %2)
    :intersection #(.__retainAll ^Set$Immutable %1 %2)
@@ -841,6 +880,8 @@
    :entries      generate-entries
    :iterator     iterator
    :consume      consume-iterator
+   :seq          seq
+   :consume-seq  consume-seq
    :lookup       #(doary [x %2] (contains? %1 x))
    :union        #(into %1 %2)
    :difference   #(persistent! (apply disj! (transient %1) %2))
@@ -861,34 +902,40 @@
 (def bifurcan-list (base-list "bifurcan.List" List))
 
 (def java-array-list
-  {:label     "java.ArrayList"
-   :base      #(ArrayList.)
-   :entries   generate-numbers
-   :construct construct-java-list
-   :lookup    lookup-java-list
-   :iterator  iterator
-   :consume   consume-iterator
-   :concat    #(doto ^ArrayList (.clone ^ArrayList %) (.addAll %2))})
+  {:label        "java.ArrayList"
+   :base         #(ArrayList.)
+   :entries      generate-numbers
+   :construct    construct-java-list
+   :lookup       lookup-java-list
+   :iterator     iterator
+   :consume      consume-iterator
+   :seq          seq
+   :consume-seq  consume-seq
+   :concat       #(doto ^ArrayList (.clone ^ArrayList %) (.addAll %2))})
 
 (def pcollections-vector
-  {:label     "pcollections.TreePVector"
-   :base      #(TreePVector/empty)
-   :entries   generate-numbers
-   :construct construct-pcollections-vector
-   :iterator  iterator
-   :consume   consume-iterator
-   :lookup    lookup-java-list
-   :concat    #(.plusAll ^PVector %1 ^java.util.Collection %2)})
+  {:label        "pcollections.TreePVector"
+   :base         #(TreePVector/empty)
+   :entries      generate-numbers
+   :construct    construct-pcollections-vector
+   :iterator     iterator
+   :consume      consume-iterator
+   :seq          seq
+   :consume-seq  consume-seq
+   :lookup       lookup-java-list
+   :concat       #(.plusAll ^PVector %1 ^java.util.Collection %2)})
 
 (def paguro-vector
-  {:label     "paguro.RrbTree"
-   :base      #(RrbTree/emptyMutable)
-   :entries   generate-numbers
-   :construct construct-paguro-vector
-   :iterator  iterator
-   :consume   consume-iterator
-   :lookup    #(doary [k %2] (.get ^RrbTree %1 (int k)))
-   :concat    #(.join ^RrbTree %1 ^RrbTree %2)})
+  {:label        "paguro.RrbTree"
+   :base         #(RrbTree/emptyMutable)
+   :entries      generate-numbers
+   :construct    construct-paguro-vector
+   :iterator     iterator
+   :consume      consume-iterator
+   :seq          seq
+   :consume-seq  consume-seq
+   :lookup       #(doary [k %2] (.get ^RrbTree %1 (int k)))
+   :concat       #(.join ^RrbTree %1 ^RrbTree %2)})
 
 (def scala-vector
   {:label     "scala.Vector"
@@ -897,54 +944,70 @@
    :construct construct-scala-collection
    :iterator  #(.iterator ^scala.collection.immutable.Vector %)
    :consume   consume-scala-iterator
+   ;; this data structure throws exception for both seq and iterator-seq
    :lookup    #(doary [k %2] (.apply ^scala.collection.immutable.Vector %1 k))
    :concat    #(.$plus$plus ^scala.collection.immutable.Vector %1 %2)})
 
 (def vavr-vector
-  {:label     "vavr.Vector"
-   :base      #(io.vavr.collection.Vector/empty)
-   :entries   generate-numbers
-   :construct construct-vavr-vector
-   :iterator  iterator
-   :consume   consume-iterator
-   :lookup    #(doary [k %2] (.get ^io.vavr.collection.Vector %1 k))
-   :concat    #(.appendAll ^io.vavr.collection.Vector %1 ^Iterable %2)})
+  {:label        "vavr.Vector"
+   :base         #(io.vavr.collection.Vector/empty)
+   :entries      generate-numbers
+   :construct    construct-vavr-vector
+   :iterator     iterator
+   :consume      consume-iterator
+   :seq          seq
+   :consume-seq  consume-seq
+   :lookup       #(doary [k %2] (.get ^io.vavr.collection.Vector %1 k))
+   :concat       #(.appendAll ^io.vavr.collection.Vector %1 ^Iterable %2)})
 
 (def clojure-vector
-  {:label     "clojure.PersistentVector"
-   :base      (constantly [])
-   :entries   generate-numbers
-   :construct construct-clojure-vector
-   :iterator  iterator
-   :consume   consume-iterator
-   :lookup    #(doary [i %2] (nth %1 i))
-   :concat    #(into %1 %2)})
+  {:label        "clojure.PersistentVector"
+   :base         (constantly [])
+   :entries      generate-numbers
+   :construct    construct-clojure-vector
+   :iterator     iterator
+   :consume      consume-iterator
+   :seq          seq
+   :consume-seq  consume-seq
+   :lookup       #(doary [i %2] (nth %1 i))
+   :concat       #(into %1 %2)})
 
 (def clojure-rrb-vector
-  {:label     "clojure.core.rrb-vector"
-   :base      (constantly (crrbv/vector))
-   :entries   generate-numbers
-   :construct construct-clojure-rrb-vector
-   :iterator  iterator
-   :consume   consume-iterator
-   :lookup    #(doary [i %2] (nth %1 i))
-   :concat    #(crrbv/catvec %1 %2)})
+  {:label        "clojure.core.rrb-vector"
+   :base         (constantly (crrbv/vector))
+   :entries      generate-numbers
+   :construct    construct-clojure-rrb-vector
+   :iterator     iterator
+   :consume      consume-iterator
+   :seq          seq
+   :consume-seq  consume-seq
+   :lookup       #(doary [i %2] (nth %1 i))
+   :concat       #(crrbv/catvec %1 %2)})
+
+;;(def clojure-rrb-vector-0-1-0
+;;  (assoc clojure-rrb-vector
+;;         :label "clojure.core.rrb-vector-0.1.0"))
+;;(def clojure-rrb-vector-0-1-0-plus-transducers
+;;  (assoc clojure-rrb-vector
+;;         :label "clojure.core.rrb-vector-0.1.0+transducers"))
 
 ;; strings
 
 (def java-string
-  {:label     "java.String"
-   :base      (constantly "")
-   :lookup    #(doary-int [i %2]
-                 (.codePointAt ^String %1 (.offsetByCodePoints ^String %1 0 i)))
-   :indices   range
-   :entries   generate-string
-   :construct concat-string
-   :consume   consume-int-iterator
-   :iterator  #(.iterator (.codePoints ^String %))
-   :concat    concat-string
-   :remove    remove-string
-   :insert    insert-string})
+  {:label        "java.String"
+   :base         (constantly "")
+   :lookup       #(doary-int [i %2]
+                    (.codePointAt ^String %1 (.offsetByCodePoints ^String %1 0 i)))
+   :indices      range
+   :entries      generate-string
+   :construct    concat-string
+   :consume      consume-int-iterator
+   :iterator     #(.iterator (.codePoints ^String %))
+   :seq          seq
+   :consume-seq  consume-seq
+   :concat       concat-string
+   :remove       remove-string
+   :insert       insert-string})
 
 (def rope
   {:label     "bifurcan.Rope"
@@ -956,6 +1019,7 @@
    :construct #(.concat ^Rope %1 (Rope/from %2))
    :consume   consume-int-iterator
    :iterator  #(.codePoints ^Rope %)
+   ;; this data structure throws exception for both seq and iterator-seq
    :concat    concat-rope
    :remove    remove-rope
    :insert    insert-rope})
@@ -998,11 +1062,11 @@
 
 (defn benchmark-iteration [n {:keys [base entries construct iterator consume] :as m}]
   (let [c (construct (base) (entries n))]
-    (benchmark n (consume (iterator c)))))
-
-(defn benchmark-iteration [n {:keys [base entries construct iterator consume] :as m}]
-  (let [c (construct (base) (entries n))]
     (benchmark n #(consume (iterator c)))))
+
+(defn benchmark-consumeseq [n {:keys [base entries construct seq consume-seq] :as m}]
+  (let [c (construct (base) (entries n))]
+    (benchmark n #(consume-seq (seq c)))))
 
 (defn benchmark-concat [n {:keys [base entries construct concat]}]
   (let [init (construct (base) (entries 0))
@@ -1075,6 +1139,7 @@
 (def sorted-maps [bifurcan-sorted-map java-sorted-map clojure-sorted-map vavr-sorted-map scala-sorted-map paguro-sorted-map int-map scala-int-map])
 
 (def lists [bifurcan-list java-array-list clojure-vector vavr-vector scala-vector paguro-vector linear-list clojure-rrb-vector #_pcollections-vector])
+;;(def lists [bifurcan-list java-array-list clojure-vector vavr-vector scala-vector paguro-vector linear-list clojure-rrb-vector-0-1-0 clojure-rrb-vector-0-1-0-plus-transducers #_pcollections-vector])
 
 (def strings [java-string rope])
 
@@ -1089,6 +1154,8 @@
                   [linear-map java-hash-map linear-set java-hash-set java-sorted-map]]
    :iteration    [benchmark-iteration
                   all-colls]
+   :consumeseq   [benchmark-consumeseq
+                  (filter #(contains? % :consume-seq) all-colls)]
    :concat       [benchmark-concat
                   (concat lists strings)]
    :union        [benchmark-union
@@ -1173,6 +1240,7 @@
    "sorted_map_iterate" [:iteration sorted-maps]
    "map_iterate" [:iteration maps]
    "list_iterate" [:iteration lists]
+   "list_consumeseq" [:consumeseq lists]
 
    "string_construct" [:construct strings]
    "string_lookup" [:lookup strings]
@@ -1235,7 +1303,7 @@
                                            (format "%3d " idx)
                                            "")
                                          (:label coll))))
-                      all-colls)))
+                      colls)))
 
 (defn map-coll-name->index [colls]
   (->> colls
@@ -1293,6 +1361,8 @@
 
     "benchmark"
     (let [[n step & collection-names] args
+          ;; If no collection names given on command line, default to
+          ;; running benchmarks on all collections.
           coll-idxs (if (empty? collection-names)
                       {:all-found true,
                        :indexes (range (count all-colls))}
@@ -1326,6 +1396,12 @@
       (io/make-parents "benchmarks/data/benchmarks.edn")
       (spit "benchmarks/data/benchmarks.edn" (pr-str descriptor))
 
+      (write-out-csvs descriptor))
+
+    "write-out-csvs"
+    (let [descriptor (try
+                       (read-string (slurp "benchmarks/data/benchmarks.edn"))
+                       (catch Throwable e nil))]
       (write-out-csvs descriptor)))
 
   (flush)
