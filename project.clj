@@ -14,6 +14,7 @@
                    :all       (constantly true)}
   :profiles {:travis {:jvm-opts ^:replace ["-server" "-Xmx1g"]}
              :bench  {:jvm-opts ^:replace ["-server" "-Xmx10g" #_"-XX:+UseParallelGC"]}
+             :socket {:jvm-opts ["-Dclojure.server.repl={:port,50505,:accept,clojure.core.server/repl}"]}
              :dev    {:dependencies [;; for tests
                                      [org.clojure/clojure "1.8.0"]
                                      [org.clojure/test.check "0.9.0"]
