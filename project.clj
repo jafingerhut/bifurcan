@@ -3,6 +3,46 @@
 (cemerick.pomegranate.aether/register-wagon-factory!
   "http" #(org.apache.maven.wagon.providers.http.HttpWagon.))
 
+;; If you want to use a recent version of this dependency:
+
+;; [org.scala-lang/scala-library "2.13.0"]
+
+;; such as 2.12.0 or later, that appears to be incompatible with this
+;; dependency:
+
+;; [io.github.nicolasstucki/scala-rrb-vector_2.11 "0.1.1"]
+
+;; because the scala-rrb-vector library was written in 2015-2016 time
+;; frame, to be compatible with version 2.11.x of scala-library.  The
+;; latest version of scala-library that I have done successful "smoke
+;; testing" with scala-rrb-vector is 2.11.12, but the scala-rrb-vector
+;; code itself mentions 2.11.6.  There appear to be changes made in
+;; scala-library in 2.12.0 that scala-rrb-vector was never updated to
+;; be compatible with.
+
+;; In particular, version 2.12.0 and 2.13.0 of scala-library lead to
+;; ClassNotFoundException exceptions when attempting to create an
+;; instance of an RRBVector.
+
+;; So it apears that two reasonable choices for running benchmarks
+;; with this project are:
+
+;; Option (1)
+
+;; Test with latest scala-library, but not with scala-rrb-vector at
+;; all, with these dependencies:
+
+;; [org.scala-lang/scala-library "2.13.0"]
+
+;; Option (2)
+
+;; Test with older scala-library, and with scala-rrb-vector, using
+;; these dependencies:
+
+;; [org.scala-lang/scala-library "2.11.12"]
+;; [io.github.nicolasstucki/scala-rrb-vector_2.11 "0.1.1"]
+
+
 (defproject io.lacuna/bifurcan "0.2.0-alpha1"
   :java-source-paths ["src"]
   :dependencies []
@@ -30,7 +70,12 @@
                                      [io.usethesource/capsule "0.6.3"]
                                      [org.pcollections/pcollections "3.0.3"]
                                      [io.vavr/vavr "0.10.0"]
+                                     ;; Option (1)
                                      [org.scala-lang/scala-library "2.13.0"]
+
+                                     ;; Option (2)
+                                     ;;[org.scala-lang/scala-library "2.11.12"]
+                                     ;;[io.github.nicolasstucki/scala-rrb-vector_2.11 "0.1.1"]
                                      [org.functionaljava/functionaljava "4.8.1"]
                                      [org.eclipse.collections/eclipse-collections "9.2.0"]
                                      [org.organicdesign/Paguro "3.1.2"]]}}
