@@ -9,10 +9,6 @@ import static java.lang.System.arraycopy;
  */
 public class ListNodes {
 
-  // Temporarily use a smaller shift value, so generative tests can
-  // find problems much more quickly.  Smaller size List objects
-  // produce a larger variety of internal tree data structures with
-  // smaller MAX_BRANCHES.
   private static final int SHIFT_INCREMENT = 5;
   private static final int MAX_BRANCHES = 1 << SHIFT_INCREMENT;
   private static final int BRANCH_MASK = MAX_BRANCHES - 1;
