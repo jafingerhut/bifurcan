@@ -664,7 +664,7 @@ public class Lists {
    * @return a hash for the list
    */
   public static <V> long hash(IList<V> l, ToLongFunction<V> hash, LongBinaryOperator combiner) {
-    return l.stream().mapToLong(hash).reduce(combiner).orElse(0);
+    return l.stream().mapToLong(hash).reduce(1, combiner);
   }
 
   /**

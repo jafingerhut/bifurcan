@@ -3,7 +3,8 @@
    [clojure.test :refer :all])
   (:import
    [io.lacuna.bifurcan
-    List]))
+    List
+    Lists]))
 
 ;; Access some private constants in the Java implementation, so some
 ;; tests can be parameterized based upon those values.
@@ -16,7 +17,14 @@
 
 
 (defn same-seq [a b]
-  (= (seq a) (seq b)))
+  (and (= (seq a) (seq b))
+       (let [ha (.hashCode a)
+             hb (.hashCode b)]
+         (when (not= ha hb)
+           (println "(.hashCode a)=" ha " and (.hashCode b)=" hb
+                    " differ for (class a)=" (class a)
+                    " (class b)=" (class b)))
+         (= ha hb))))
 
 (deftest github-issue-18-test
   (let [b max-branches
@@ -92,3 +100,24 @@
     (is (= true (same-seq l3 r3)))
     (let [l4 (.slice l3 1 10)]
       (is (= true (same-seq l4 r4))))))
+
+(deftest test-list-hashcode
+  (doseq [vals [(range 0) (range 1 2) (range 10) (range 100) (range 1000)]]
+    (let [lst (List/from vals)
+          javalst (Lists/toList lst)
+          arraylst (java.util.ArrayList. vals)]
+      (is (= true (same-seq lst javalst)))
+      (is (= true (same-seq lst arraylst)))
+      (is (= true (same-seq javalst arraylst))))))
+
+
+(comment
+
+(require '[bifurcan.list-tests :as lt])
+(lt/github-issue-18-test)
+(lt/github-issue-18-variant-test)
+(lt/github-issue-19-test)
+(lt/github-issue-19-reversed-test)
+(lt/test-list-hashcode)
+
+)

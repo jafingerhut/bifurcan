@@ -299,6 +299,16 @@ public class List<V> implements IList<V>, Cloneable {
   }
 
   @Override
+  public int hashCode() {
+    Iterator it = iterator();
+    int h = 1;
+    while (it.hasNext()) {
+      h = 31 * h + it.next().hashCode();
+    }
+    return h;
+  }
+
+  @Override
   public String toString() {
     return Lists.toString(this);
   }
